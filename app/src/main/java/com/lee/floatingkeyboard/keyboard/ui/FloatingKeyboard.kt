@@ -95,6 +95,8 @@ private fun KeyboardContent(
     onClose: () -> Unit,
     onDrag: (Offset) -> Unit
 ) {
+    // Shift state for Korean keyboard
+    var isKoreanShiftPressed by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .width(500.dp)
@@ -184,7 +186,19 @@ private fun KeyboardContent(
                 EnglishKeyboardLayout(onKeyPress = onKeyPress)
             }
             KeyboardLanguage.KOREAN -> {
-                HangulKeyboardLayout(onKeyPress = onKeyPress)
+                HangulKeyboardLayout(
+                    onKeyPress = { key ->
+                        // Reset shift state after input (except shift key itself)
+                        if (key != "⇧" && isKoreanShiftPressed) {
+                            isKoreanShiftPressed = false
+                        }
+                        onKeyPress(key)
+                    },
+                    isShiftPressed = isKoreanShiftPressed,
+                    onShiftToggle = {
+                        isKoreanShiftPressed = !isKoreanShiftPressed
+                    }
+                )
             }
             KeyboardLanguage.SYMBOLS -> {
                 SymbolKeyboardLayout(onKeyPress = onKeyPress)
@@ -209,17 +223,53 @@ private fun EnglishKeyboardLayout(onKeyPress: (String) -> Unit) {
 }
 
 @Composable
-private fun HangulKeyboardLayout(onKeyPress: (String) -> Unit) {
-    val hangulKeys = listOf(
-        listOf("ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"),
-        listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"),
-        listOf("⇧", "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ", "⌫"),
-        listOf("ABC", ",", "Space", ".", "⏎")
+private fun HangulKeyboardLayout(
+    onKeyPress: (String) -> Unit,
+    isShiftPressed: Boolean = false,
+    onShiftToggle: () -> Unit = {}
+) {
+    // Define double consonant mappings
+    val doubleConsonantMap = mapOf(
+        "ㅂ" to "ㅃ",
+        "ㅈ" to "ㅉ",
+        "ㄷ" to "ㄸ",
+        "ㄱ" to "ㄲ",
+        "ㅅ" to "ㅆ"
     )
 
-    SimpleKeyboardLayout(
+    val hangulKeys = if (isShiftPressed) {
+        listOf(
+            listOf(
+                doubleConsonantMap["ㅂ"] ?: "ㅂ",
+                doubleConsonantMap["ㅈ"] ?: "ㅈ",
+                doubleConsonantMap["ㄷ"] ?: "ㄷ",
+                doubleConsonantMap["ㄱ"] ?: "ㄱ",
+                doubleConsonantMap["ㅅ"] ?: "ㅅ",
+                "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"
+            ),
+            listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"),
+            listOf("⇧", "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ", "⌫"),
+            listOf("ABC", ",", "Space", ".", "⏎")
+        )
+    } else {
+        listOf(
+            listOf("ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"),
+            listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"),
+            listOf("⇧", "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ", "⌫"),
+            listOf("ABC", ",", "Space", ".", "⏎")
+        )
+    }
+
+    ShiftableKeyboardLayout(
         keys = hangulKeys,
-        onKeyPress = onKeyPress
+        isShiftPressed = isShiftPressed,
+        onKeyPress = { key ->
+            if (key == "⇧") {
+                onShiftToggle()
+            } else {
+                onKeyPress(key)
+            }
+        }
     )
 }
 

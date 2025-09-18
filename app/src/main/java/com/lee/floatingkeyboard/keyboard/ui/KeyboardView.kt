@@ -182,3 +182,98 @@ fun SimpleKeyboardLayout(
         }
     }
 }
+
+@Composable
+fun ShiftableKeyboardLayout(
+    keys: List<List<String>>,
+    isShiftPressed: Boolean = false,
+    modifier: Modifier = Modifier,
+    onKeyPress: (String) -> Unit = {}
+) {
+    var pressedKey by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(pressedKey) {
+        if (pressedKey != null) {
+            delay(150)
+            pressedKey = null
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .shadow(8.dp, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        keys.forEach { rowKeys ->
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                rowKeys.forEachIndexed { index, keyText ->
+                    val weight = when (keyText) {
+                        "Space" -> 4f
+                        "⇧", "⌫", "⏎" -> 1.5f
+                        "123", "ABC" -> 1.5f
+                        else -> 1f
+                    }
+
+                    // Determine if this is a shift key and apply special styling
+                    val isShiftKey = keyText == "⇧"
+                    val shiftBackgroundColor = if (isShiftKey && isShiftPressed) {
+                        MaterialTheme.colorScheme.primary
+                    } else if (isShiftKey) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer
+                    }
+
+                    val shiftTextColor = if (isShiftKey && isShiftPressed) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(weight)
+                            .height(50.dp)
+                            .clickable {
+                                pressedKey = keyText
+                                onKeyPress(keyText)
+                            }
+                    ) {
+                        // Visual button with proper spacing
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(
+                                    start = if (index > 0) 2.dp else 0.dp,
+                                    top = 1.dp,
+                                    end = if (index < rowKeys.size - 1) 2.dp else 0.dp,
+                                    bottom = 1.dp
+                                )
+                                .shadow(
+                                    elevation = if (pressedKey == keyText) 6.dp else 2.dp,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(shiftBackgroundColor),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = keyText,
+                                color = shiftTextColor,
+                                fontSize = if (keyText.length > 3) 12.sp else 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

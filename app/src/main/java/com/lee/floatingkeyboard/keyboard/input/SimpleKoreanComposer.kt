@@ -171,7 +171,8 @@ class SimpleKoreanComposer {
             }
 
             jongseong == null -> {
-                // Add as jongseong
+                // Add as jongseong (temporarily)
+                // This will be corrected if the next input is a vowel
                 jongseong = consonant
                 return CompositionResult(getCurrentSyllable(), true)
             }
@@ -208,14 +209,23 @@ class SimpleKoreanComposer {
             }
 
             choseong != null && jungseong != null -> {
-                // Try to combine with existing vowel
+                // If jongseong exists, decompose syllable immediately (two-set behavior)
+                if (jongseong != null) {
+                    return handleSyllableDecomposition(vowel)
+                }
+
+                // If no jongseong, try to combine with existing vowel
                 val combined = combineJamo(jungseong!!, vowel)
                 if (combined != null) {
                     jungseong = combined
                     return CompositionResult(getCurrentSyllable(), true)
                 } else {
-                    // Check if we need to decompose last syllable
-                    return handleSyllableDecomposition(vowel)
+                    // Cannot combine, complete current and start new vowel
+                    val completed = getCurrentSyllable()
+                    choseong = null
+                    jungseong = vowel
+                    jongseong = null
+                    return CompositionResult(getCurrentSyllable(), true, finishPrevious = completed)
                 }
             }
 
