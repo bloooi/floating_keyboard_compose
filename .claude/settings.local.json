@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__search_files",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__write_file",
+      "mcp__filesystem__create_directory",
+      "mcp__filesystem__edit_file",
+      "Bash(./gradlew:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:android.googlesource.com)",
+      "Bash(mkdir:*)",
+      "Bash(kotlin test_hangul.kt)",
+      "Bash(kotlinc:*)",
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(kotlin:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
