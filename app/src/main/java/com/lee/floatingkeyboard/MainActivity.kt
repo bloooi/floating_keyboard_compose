@@ -94,8 +94,8 @@ fun MainScreen() {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "• Drag to move the floating keyboard\n" +
-                                    "• Tap 🌐 to switch between English/Korean\n" +
-                                    "• Korean Hangul composition support\n" +
+                                    "• Tap 🌐 to switch between different languages\n" +
+                                    "• Advanced text composition support\n" +
                                     "• AOSP-based implementation\n" +
                                     "• Material Design 3 UI",
                             style = MaterialTheme.typography.bodyMedium

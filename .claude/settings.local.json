@@ -16,7 +16,16 @@
       "Bash(kotlin test_hangul.kt)",
       "Bash(kotlinc:*)",
       "WebFetch(domain:stackoverflow.com)",
-      "Bash(kotlin:*)"
+      "Bash(kotlin:*)",
+      "mcp__serena__list_dir",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__find_symbol",
+      "mcp__serena__search_for_pattern",
+      "mcp__filesystem__move_file",
+      "mcp__serena__replace_symbol_body",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

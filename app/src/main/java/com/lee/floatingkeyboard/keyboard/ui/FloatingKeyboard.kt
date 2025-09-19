@@ -20,7 +20,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.lee.floatingkeyboard.keyboard.core.Key
-import com.lee.floatingkeyboard.keyboard.input.SimpleKoreanComposer
+import com.lee.floatingkeyboard.keyboard.input.TextComposer
+import com.lee.floatingkeyboard.keyboard.input.ComposerFactory
 import com.lee.floatingkeyboard.utils.KeyboardLanguage
 import com.lee.floatingkeyboard.utils.LanguageManager
 import kotlin.math.roundToInt
@@ -29,18 +30,21 @@ import kotlin.math.roundToInt
 fun FloatingKeyboard(
     modifier: Modifier = Modifier,
     languageManager: LanguageManager = remember { LanguageManager() },
-    hangulComposer: SimpleKoreanComposer = remember { SimpleKoreanComposer() },
     onKeyPress: (String) -> Unit = {},
     onClose: () -> Unit = {}
 ) {
+    val currentLanguage by languageManager.currentLanguage
+    
+    // 언어가 바뀔 때마다 새로운 Composer 생성
+    val textComposer by remember(currentLanguage) {
+        derivedStateOf { ComposerFactory.createComposer(currentLanguage) }
+    }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var keyboardSize by remember { mutableStateOf(Offset.Zero) }
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
-
-    val currentLanguage by languageManager.currentLanguage
 
     // Drag gesture handler function to be shared
     val handleDrag: (Offset) -> Unit = { dragAmount ->
@@ -66,16 +70,10 @@ fun FloatingKeyboard(
     ) {
         KeyboardContent(
             currentLanguage = currentLanguage,
-            hangulComposer = hangulComposer,
+            textComposer = textComposer,
             onKeyPress = { keyText ->
-                when (currentLanguage) {
-                    KeyboardLanguage.KOREAN -> {
-                        handleHangulInput(keyText, hangulComposer, onKeyPress)
-                    }
-                    else -> {
-                        onKeyPress(keyText)
-                    }
-                }
+                // 모든 언어에 대해 통일된 처리
+                handleTextInput(keyText, textComposer, onKeyPress)
             },
             onLanguageSwitch = {
                 languageManager.switchToNext()
@@ -89,7 +87,7 @@ fun FloatingKeyboard(
 @Composable
 private fun KeyboardContent(
     currentLanguage: KeyboardLanguage,
-    hangulComposer: SimpleKoreanComposer,
+    textComposer: TextComposer,
     onKeyPress: (String) -> Unit,
     onLanguageSwitch: () -> Unit,
     onClose: () -> Unit,
@@ -288,14 +286,14 @@ private fun SymbolKeyboardLayout(onKeyPress: (String) -> Unit) {
     )
 }
 
-private fun handleHangulInput(
+private fun handleTextInput(
     keyText: String,
-    hangulComposer: SimpleKoreanComposer,
+    textComposer: TextComposer,
     onKeyPress: (String) -> Unit
 ) {
     when (keyText) {
         "⌫" -> {
-            val result = hangulComposer.backspace()
+            val result = textComposer.backspace()
             if (result.currentComposition != null) {
                 if (result.isComposing) {
                     onKeyPress("COMPOSE:${result.currentComposition}")
@@ -307,23 +305,23 @@ private fun handleHangulInput(
             }
         }
         "Space" -> {
-            val completed = hangulComposer.complete()
+            val completed = textComposer.complete()
             if (completed.currentComposition != null) {
                 onKeyPress("COMPLETE:${completed.currentComposition}")
             }
             onKeyPress(" ")
         }
         "⏎" -> {
-            val completed = hangulComposer.complete()
+            val completed = textComposer.complete()
             if (completed.currentComposition != null) {
                 onKeyPress("COMPLETE:${completed.currentComposition}")
             }
             onKeyPress("ENTER")
         }
         else -> {
-            if (keyText.length == 1 && isKoreanJamo(keyText[0])) {
-                // Korean jamo character
-                val result = hangulComposer.addJamo(keyText[0])
+            if (keyText.length == 1) {
+                // 단일 문자 입력
+                val result = textComposer.addCharacter(keyText[0])
 
                 // Handle any previous syllable that was completed
                 result.finishPrevious?.let { finished ->
@@ -347,16 +345,4 @@ private fun handleHangulInput(
     }
 }
 
-private fun isKoreanJamo(char: Char): Boolean {
-    return when (char) {
-        // Choseong (초성) - Initial consonants
-        'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ',
-        'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
-        // Jungseong (중성) - Medial vowels
-        'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ',
-        'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ',
-        // Jongseong (종성) - Final consonants (excluding space)
-        'ㄳ', 'ㄵ', 'ㄶ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅄ' -> true
-        else -> false
-    }
-}
+// isValidInputComponent 함수 제거됨 - 이제 각 Composer가 자체적으로 유효성 검사
