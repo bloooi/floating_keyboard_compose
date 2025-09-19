@@ -1,0 +1,103 @@
+package com.lee.floatingkeyboard.keyboard.language.providers
+
+import com.lee.floatingkeyboard.keyboard.core.KeyMetadata
+import com.lee.floatingkeyboard.keyboard.core.KeyboardLayout
+import com.lee.floatingkeyboard.keyboard.input.HangulComposer
+import com.lee.floatingkeyboard.keyboard.input.TextComposer
+import com.lee.floatingkeyboard.keyboard.language.LanguageProvider
+
+/**
+ * 한글 키보드 언어 제공자
+ */
+class KoreanLanguageProvider : LanguageProvider {
+    override val id: String = "korean"
+    override val displayName: String = "한글"
+
+    override fun createComposer(): TextComposer {
+        return HangulComposer()
+    }
+
+    override fun getLayout(): KeyboardLayout {
+        return createHangulLayout(false)
+    }
+
+    override fun getShiftLayout(): KeyboardLayout {
+        return createHangulLayout(true)
+    }
+
+    private fun createHangulLayout(isShift: Boolean): KeyboardLayout {
+        // 쌍자음 매핑 정의
+        val doubleConsonants = mapOf(
+            "ㅂ" to "ㅃ",
+            "ㅈ" to "ㅉ",
+            "ㄷ" to "ㄸ",
+            "ㄱ" to "ㄲ",
+            "ㅅ" to "ㅆ"
+        )
+
+        val firstRow = if (isShift) {
+            listOf(
+                KeyMetadata.character(doubleConsonants["ㅂ"] ?: "ㅂ"),
+                KeyMetadata.character(doubleConsonants["ㅈ"] ?: "ㅈ"),
+                KeyMetadata.character(doubleConsonants["ㄷ"] ?: "ㄷ"),
+                KeyMetadata.character(doubleConsonants["ㄱ"] ?: "ㄱ"),
+                KeyMetadata.character(doubleConsonants["ㅅ"] ?: "ㅅ"),
+                KeyMetadata.character("ㅛ"),
+                KeyMetadata.character("ㅕ"),
+                KeyMetadata.character("ㅑ"),
+                KeyMetadata.character("ㅐ"),
+                KeyMetadata.character("ㅔ")
+            )
+        } else {
+            listOf(
+                KeyMetadata.character("ㅂ"),
+                KeyMetadata.character("ㅈ"),
+                KeyMetadata.character("ㄷ"),
+                KeyMetadata.character("ㄱ"),
+                KeyMetadata.character("ㅅ"),
+                KeyMetadata.character("ㅛ"),
+                KeyMetadata.character("ㅕ"),
+                KeyMetadata.character("ㅑ"),
+                KeyMetadata.character("ㅐ"),
+                KeyMetadata.character("ㅔ")
+            )
+        }
+
+        val secondRow = listOf(
+            KeyMetadata.character("ㅁ"),
+            KeyMetadata.character("ㄴ"),
+            KeyMetadata.character("ㅇ"),
+            KeyMetadata.character("ㄹ"),
+            KeyMetadata.character("ㅎ"),
+            KeyMetadata.character("ㅗ"),
+            KeyMetadata.character("ㅓ"),
+            KeyMetadata.character("ㅏ"),
+            KeyMetadata.character("ㅣ")
+        )
+
+        val thirdRow = listOf(
+            KeyMetadata.shift(),
+            KeyMetadata.character("ㅋ"),
+            KeyMetadata.character("ㅌ"),
+            KeyMetadata.character("ㅊ"),
+            KeyMetadata.character("ㅍ"),
+            KeyMetadata.character("ㅠ"),
+            KeyMetadata.character("ㅜ"),
+            KeyMetadata.character("ㅡ"),
+            KeyMetadata.backspace()
+        )
+
+        val fourthRow = listOf(
+            KeyMetadata.modeSwitch("ABC"),
+            KeyMetadata.character(","),
+            KeyMetadata.space(),
+            KeyMetadata.character("."),
+            KeyMetadata.enter()
+        )
+
+        return KeyboardLayout(
+            rows = listOf(firstRow, secondRow, thirdRow, fourthRow),
+            shiftToggleEnabled = true
+        )
+    }
+}

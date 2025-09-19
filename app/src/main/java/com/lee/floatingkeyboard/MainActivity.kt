@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lee.floatingkeyboard.keyboard.ui.FloatingKeyboard
+import com.lee.floatingkeyboard.keyboard.language.LanguageRegistry
 import com.lee.floatingkeyboard.ui.theme.FloatingKeyboardTheme
 
 class MainActivity : ComponentActivity() {
@@ -106,7 +107,11 @@ fun MainScreen() {
         }
 
         if (showKeyboard) {
+            // 시스템 로케일 기반으로 최적의 기본 언어 선택
+            val textComposer = remember { LanguageRegistry.getDefaultProvider().createComposer() }
+            
             FloatingKeyboard(
+                textComposer = textComposer,
                 modifier = Modifier.wrapContentSize(),
                 onKeyPress = { keyText: String ->
                     when {

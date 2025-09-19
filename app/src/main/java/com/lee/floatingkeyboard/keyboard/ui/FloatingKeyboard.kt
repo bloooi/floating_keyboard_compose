@@ -19,26 +19,22 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.lee.floatingkeyboard.keyboard.core.Key
+import com.lee.floatingkeyboard.keyboard.core.KeyAction
 import com.lee.floatingkeyboard.keyboard.input.TextComposer
-import com.lee.floatingkeyboard.keyboard.input.ComposerFactory
-import com.lee.floatingkeyboard.utils.KeyboardLanguage
+import com.lee.floatingkeyboard.keyboard.language.LanguageProvider
 import com.lee.floatingkeyboard.utils.LanguageManager
 import kotlin.math.roundToInt
 
 @Composable
 fun FloatingKeyboard(
+    textComposer: TextComposer,
     modifier: Modifier = Modifier,
     languageManager: LanguageManager = remember { LanguageManager() },
     onKeyPress: (String) -> Unit = {},
     onClose: () -> Unit = {}
 ) {
-    val currentLanguage by languageManager.currentLanguage
+    val currentLanguageProvider by languageManager.currentLanguage
     
-    // 언어가 바뀔 때마다 새로운 Composer 생성
-    val textComposer by remember(currentLanguage) {
-        derivedStateOf { ComposerFactory.createComposer(currentLanguage) }
-    }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var keyboardSize by remember { mutableStateOf(Offset.Zero) }
     val density = LocalDensity.current
@@ -69,11 +65,11 @@ fun FloatingKeyboard(
             }
     ) {
         KeyboardContent(
-            currentLanguage = currentLanguage,
+            languageProvider = currentLanguageProvider,
             textComposer = textComposer,
-            onKeyPress = { keyText ->
+            onKeyPress = { keyAction ->
                 // 모든 언어에 대해 통일된 처리
-                handleTextInput(keyText, textComposer, onKeyPress)
+                handleTextInput(keyAction, textComposer, onKeyPress)
             },
             onLanguageSwitch = {
                 languageManager.switchToNext()
@@ -86,15 +82,16 @@ fun FloatingKeyboard(
 
 @Composable
 private fun KeyboardContent(
-    currentLanguage: KeyboardLanguage,
+    languageProvider: LanguageProvider,
     textComposer: TextComposer,
-    onKeyPress: (String) -> Unit,
+    onKeyPress: (KeyAction) -> Unit,
     onLanguageSwitch: () -> Unit,
     onClose: () -> Unit,
     onDrag: (Offset) -> Unit
 ) {
-    // Shift state for Korean keyboard
-    var isKoreanShiftPressed by remember { mutableStateOf(false) }
+    // Shift state
+    var isShiftPressed by remember { mutableStateOf(false) }
+    
     Column(
         modifier = Modifier
             .width(500.dp)
@@ -143,11 +140,7 @@ private fun KeyboardContent(
                 }
 
                 Text(
-                    text = when (currentLanguage) {
-                        KeyboardLanguage.ENGLISH -> "English"
-                        KeyboardLanguage.KOREAN -> "한글"
-                        KeyboardLanguage.SYMBOLS -> "123"
-                    },
+                    text = languageProvider.displayName,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -179,120 +172,46 @@ private fun KeyboardContent(
         }
 
         // Keyboard layout based on current language
-        when (currentLanguage) {
-            KeyboardLanguage.ENGLISH -> {
-                EnglishKeyboardLayout(onKeyPress = onKeyPress)
-            }
-            KeyboardLanguage.KOREAN -> {
-                HangulKeyboardLayout(
-                    onKeyPress = { key ->
-                        // Reset shift state after input (except shift key itself)
-                        if (key != "⇧" && isKoreanShiftPressed) {
-                            isKoreanShiftPressed = false
+        val layout = if (isShiftPressed) {
+            languageProvider.getShiftLayout()
+        } else {
+            languageProvider.getLayout()
+        }
+
+        MetadataKeyboardLayout(
+            layout = layout,
+            onKeyPress = { keyMetadata ->
+                when (keyMetadata.action) {
+                    KeyAction.Shift -> {
+                        if (layout.shiftToggleEnabled) {
+                            isShiftPressed = !isShiftPressed
                         }
-                        onKeyPress(key)
-                    },
-                    isShiftPressed = isKoreanShiftPressed,
-                    onShiftToggle = {
-                        isKoreanShiftPressed = !isKoreanShiftPressed
                     }
-                )
+                    KeyAction.LanguageSwitch -> {
+                        onLanguageSwitch()
+                    }
+                    else -> {
+                        // Reset shift state after input (except shift key itself)
+                        if (isShiftPressed && keyMetadata.action != KeyAction.Shift) {
+                            isShiftPressed = false
+                        }
+                        onKeyPress(keyMetadata.action)
+                    }
+                }
             }
-            KeyboardLanguage.SYMBOLS -> {
-                SymbolKeyboardLayout(onKeyPress = onKeyPress)
-            }
-        }
-    }
-}
-
-@Composable
-private fun EnglishKeyboardLayout(onKeyPress: (String) -> Unit) {
-    val qwertyKeys = listOf(
-        listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
-        listOf("a", "s", "d", "f", "g", "h", "j", "k", "l"),
-        listOf("⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"),
-        listOf("123", ",", "Space", ".", "⏎")
-    )
-
-    SimpleKeyboardLayout(
-        keys = qwertyKeys,
-        onKeyPress = onKeyPress
-    )
-}
-
-@Composable
-private fun HangulKeyboardLayout(
-    onKeyPress: (String) -> Unit,
-    isShiftPressed: Boolean = false,
-    onShiftToggle: () -> Unit = {}
-) {
-    // Define double consonant mappings
-    val doubleConsonantMap = mapOf(
-        "ㅂ" to "ㅃ",
-        "ㅈ" to "ㅉ",
-        "ㄷ" to "ㄸ",
-        "ㄱ" to "ㄲ",
-        "ㅅ" to "ㅆ"
-    )
-
-    val hangulKeys = if (isShiftPressed) {
-        listOf(
-            listOf(
-                doubleConsonantMap["ㅂ"] ?: "ㅂ",
-                doubleConsonantMap["ㅈ"] ?: "ㅈ",
-                doubleConsonantMap["ㄷ"] ?: "ㄷ",
-                doubleConsonantMap["ㄱ"] ?: "ㄱ",
-                doubleConsonantMap["ㅅ"] ?: "ㅅ",
-                "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"
-            ),
-            listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"),
-            listOf("⇧", "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ", "⌫"),
-            listOf("ABC", ",", "Space", ".", "⏎")
-        )
-    } else {
-        listOf(
-            listOf("ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"),
-            listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"),
-            listOf("⇧", "ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ", "⌫"),
-            listOf("ABC", ",", "Space", ".", "⏎")
         )
     }
-
-    ShiftableKeyboardLayout(
-        keys = hangulKeys,
-        isShiftPressed = isShiftPressed,
-        onKeyPress = { key ->
-            if (key == "⇧") {
-                onShiftToggle()
-            } else {
-                onKeyPress(key)
-            }
-        }
-    )
 }
 
-@Composable
-private fun SymbolKeyboardLayout(onKeyPress: (String) -> Unit) {
-    val symbolKeys = listOf(
-        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0"),
-        listOf("-", "/", ":", ";", "(", ")", "$", "&", "@", "\""),
-        listOf(".", ",", "?", "!", "'", "\"", "⌫"),
-        listOf("ABC", "Space", "⏎")
-    )
 
-    SimpleKeyboardLayout(
-        keys = symbolKeys,
-        onKeyPress = onKeyPress
-    )
-}
 
 private fun handleTextInput(
-    keyText: String,
+    keyAction: KeyAction,
     textComposer: TextComposer,
     onKeyPress: (String) -> Unit
 ) {
-    when (keyText) {
-        "⌫" -> {
+    when (keyAction) {
+        KeyAction.Backspace -> {
             val result = textComposer.backspace()
             if (result.currentComposition != null) {
                 if (result.isComposing) {
@@ -304,24 +223,24 @@ private fun handleTextInput(
                 onKeyPress("BACKSPACE")
             }
         }
-        "Space" -> {
+        KeyAction.Space -> {
             val completed = textComposer.complete()
             if (completed.currentComposition != null) {
                 onKeyPress("COMPLETE:${completed.currentComposition}")
             }
             onKeyPress(" ")
         }
-        "⏎" -> {
+        KeyAction.Enter -> {
             val completed = textComposer.complete()
             if (completed.currentComposition != null) {
                 onKeyPress("COMPLETE:${completed.currentComposition}")
             }
             onKeyPress("ENTER")
         }
-        else -> {
-            if (keyText.length == 1) {
+        is KeyAction.Character -> {
+            if (keyAction.char.length == 1) {
                 // 단일 문자 입력
-                val result = textComposer.addCharacter(keyText[0])
+                val result = textComposer.addCharacter(keyAction.char[0])
 
                 // Handle any previous syllable that was completed
                 result.finishPrevious?.let { finished ->
@@ -336,11 +255,24 @@ private fun handleTextInput(
                         onKeyPress("COMPLETE:${result.currentComposition}")
                     }
                 } else {
-                    onKeyPress(keyText)
+                    onKeyPress(keyAction.char)
                 }
             } else {
-                onKeyPress(keyText)
+                onKeyPress(keyAction.char)
             }
+        }
+        is KeyAction.Symbol -> {
+            onKeyPress(keyAction.symbol)
+        }
+        KeyAction.Shift -> {
+            // Shift는 UI 레벨에서 처리되므로 여기서는 무시
+        }
+        KeyAction.LanguageSwitch -> {
+            // 언어 전환은 UI 레벨에서 처리되므로 여기서는 무시
+        }
+        KeyAction.NumberMode,
+        KeyAction.LetterMode -> {
+            // 모드 전환은 UI 레벨에서 처리되므로 여기서는 무시
         }
     }
 }
