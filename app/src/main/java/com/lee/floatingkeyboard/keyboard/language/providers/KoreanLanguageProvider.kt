@@ -50,11 +50,11 @@ class KoreanLanguageProvider : LanguageProvider {
             )
         } else {
             listOf(
-                KeyMetadata.character("ㅂ"),
-                KeyMetadata.character("ㅈ"),
-                KeyMetadata.character("ㄷ"),
-                KeyMetadata.character("ㄱ"),
-                KeyMetadata.character("ㅅ"),
+                KeyMetadata.character("ㅂ", longPressOptions = listOf("ㅃ")),
+                KeyMetadata.character("ㅈ", longPressOptions = listOf("ㅉ")),
+                KeyMetadata.character("ㄷ", longPressOptions = listOf("ㄸ")),
+                KeyMetadata.character("ㄱ", longPressOptions = listOf("ㄲ")),
+                KeyMetadata.character("ㅅ", longPressOptions = listOf("ㅆ")),
                 KeyMetadata.character("ㅛ"),
                 KeyMetadata.character("ㅕ"),
                 KeyMetadata.character("ㅑ"),
@@ -69,10 +69,10 @@ class KoreanLanguageProvider : LanguageProvider {
             KeyMetadata.character("ㅇ"),
             KeyMetadata.character("ㄹ"),
             KeyMetadata.character("ㅎ"),
-            KeyMetadata.character("ㅗ"),
-            KeyMetadata.character("ㅓ"),
-            KeyMetadata.character("ㅏ"),
-            KeyMetadata.character("ㅣ")
+            KeyMetadata.character("ㅗ", longPressOptions = listOf("ㅚ", "ㅙ")),
+            KeyMetadata.character("ㅓ", longPressOptions = listOf("ㅔ")),
+            KeyMetadata.character("ㅏ", longPressOptions = listOf("ㅐ")),
+            KeyMetadata.character("ㅣ", longPressOptions = listOf("ㅢ"))
         )
 
         val thirdRow = listOf(
@@ -82,8 +82,8 @@ class KoreanLanguageProvider : LanguageProvider {
             KeyMetadata.character("ㅊ"),
             KeyMetadata.character("ㅍ"),
             KeyMetadata.character("ㅠ"),
-            KeyMetadata.character("ㅜ"),
-            KeyMetadata.character("ㅡ"),
+            KeyMetadata.character("ㅜ", longPressOptions = listOf("ㅟ", "ㅝ")),
+            KeyMetadata.character("ㅡ", longPressOptions = listOf("ㅢ")),
             KeyMetadata.backspace()
         )
 

@@ -26,28 +26,64 @@ class EnglishLanguageProvider : LanguageProvider {
     }
 
     private fun createEnglishLayout(isShift: Boolean): KeyboardLayout {
-        val firstRow = listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p")
-            .map { char ->
-                KeyMetadata.character(
-                    if (isShift) char.uppercase() else char,
-                    shiftVariant = char.uppercase()
-                )
-            }
+        val firstRow = listOf(
+            "q" to emptyList<String>(),
+            "w" to emptyList<String>(),
+            "e" to listOf("è", "é", "ê", "ë", "ē", "ě"),
+            "r" to listOf("ř"),
+            "t" to listOf("ť", "þ"),
+            "y" to listOf("ÿ", "ý"),
+            "u" to listOf("ù", "ú", "û", "ü", "ū", "ů", "ű"),
+            "i" to listOf("ì", "í", "î", "ï", "ī", "ǐ"),
+            "o" to listOf("ò", "ó", "ô", "ö", "õ", "ø", "ō", "ő"),
+            "p" to emptyList<String>()
+        ).map { (char, variants) ->
+            KeyMetadata.character(
+                if (isShift) char.uppercase() else char,
+                shiftVariant = char.uppercase(),
+                longPressOptions = if (variants.isNotEmpty()) {
+                    variants.map { if (isShift) it.uppercase() else it }
+                } else null
+            )
+        }
 
-        val secondRow = listOf("a", "s", "d", "f", "g", "h", "j", "k", "l")
-            .map { char ->
-                KeyMetadata.character(
-                    if (isShift) char.uppercase() else char,
-                    shiftVariant = char.uppercase()
-                )
-            }
+        val secondRow = listOf(
+            "a" to listOf("à", "á", "â", "ä", "æ", "ã", "å", "ā"),
+            "s" to listOf("ß", "ś", "š"),
+            "d" to listOf("ď", "ð"),
+            "f" to emptyList<String>(),
+            "g" to emptyList<String>(),
+            "h" to emptyList<String>(),
+            "j" to emptyList<String>(),
+            "k" to emptyList<String>(),
+            "l" to listOf("ł")
+        ).map { (char, variants) ->
+            KeyMetadata.character(
+                if (isShift) char.uppercase() else char,
+                shiftVariant = char.uppercase(),
+                longPressOptions = if (variants.isNotEmpty()) {
+                    variants.map { if (isShift) it.uppercase() else it }
+                } else null
+            )
+        }
 
         val thirdRow = listOf(
             KeyMetadata.shift(),
-            *listOf("z", "x", "c", "v", "b", "n", "m").map { char ->
+            *listOf(
+                "z" to listOf("ž", "ź", "ż"),
+                "x" to emptyList<String>(),
+                "c" to listOf("ç", "ć", "č"),
+                "v" to emptyList<String>(),
+                "b" to emptyList<String>(),
+                "n" to listOf("ñ", "ń"),
+                "m" to emptyList<String>()
+            ).map { (char, variants) ->
                 KeyMetadata.character(
                     if (isShift) char.uppercase() else char,
-                    shiftVariant = char.uppercase()
+                    shiftVariant = char.uppercase(),
+                    longPressOptions = if (variants.isNotEmpty()) {
+                        variants.map { if (isShift) it.uppercase() else it }
+                    } else null
                 )
             }.toTypedArray(),
             KeyMetadata.backspace()
@@ -55,9 +91,9 @@ class EnglishLanguageProvider : LanguageProvider {
 
         val fourthRow = listOf(
             KeyMetadata.modeSwitch("123"),
-            KeyMetadata.character(","),
+            KeyMetadata.character(",", longPressOptions = listOf("‚", "„")),
             KeyMetadata.space(),
-            KeyMetadata.character("."),
+            KeyMetadata.character(".", longPressOptions = listOf("…", "•", "·")),
             KeyMetadata.enter()
         )
 

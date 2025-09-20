@@ -18,14 +18,50 @@ class SymbolLanguageProvider : LanguageProvider {
     }
 
     override fun getLayout(): KeyboardLayout {
-        val firstRow = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
-            .map { KeyMetadata.character(it) }
+        val firstRow = listOf(
+            "1" to listOf("¹", "½", "⅓", "¼", "⅛"),
+            "2" to listOf("²", "⅔"),
+            "3" to listOf("³", "¾"),
+            "4" to listOf("⁴"),
+            "5" to listOf("⁵", "⅝"),
+            "6" to listOf("⁶"),
+            "7" to listOf("⁷", "⅞"),
+            "8" to listOf("⁸"),
+            "9" to listOf("⁹"),
+            "0" to listOf("°", "⁰")
+        ).map { (char, variants) ->
+            KeyMetadata.character(char, longPressOptions = variants)
+        }
 
-        val secondRow = listOf("-", "/", ":", ";", "(", ")", "$", "&", "@", "\"")
-            .map { KeyMetadata.character(it) }
+        val secondRow = listOf(
+            "-" to listOf("–", "—", "_"),
+            "/" to listOf("\\", "|", "¦"),
+            ":" to emptyList<String>(),
+            ";" to emptyList<String>(),
+            "(" to listOf("[", "{", "<"),
+            ")" to listOf("]", "}", ">"),
+            "$" to listOf("€", "£", "¥", "₩", "₹", "¢"),
+            "&" to listOf("§", "¶"),
+            "@" to listOf("©", "®", "™"),
+            "\"" to listOf(""", """, "«", "»")
+        ).map { (char, variants) ->
+            KeyMetadata.character(char, longPressOptions = if (variants.isNotEmpty()) variants else null)
+        }
 
-        val thirdRow = listOf(".", ",", "?", "!", "'", "\"", "1", "-", "(", ")")
-            .map { KeyMetadata.character(it) }
+        val thirdRow = listOf(
+            "." to listOf("…", "•", "·"),
+            "," to listOf("‚", "„"),
+            "?" to listOf("¿", "‽"),
+            "!" to listOf("¡", "‼"),
+            "'" to listOf("'", "'", "‹", "›"),
+            "\"" to listOf(""", """, "«", "»"),
+            "#" to listOf("№", "♯"),
+            "*" to listOf("†", "‡", "★", "☆"),
+            "%" to listOf("‰"),
+            "=" to listOf("≈", "≠", "∞")
+        ).map { (char, variants) ->
+            KeyMetadata.character(char, longPressOptions = variants)
+        }
 
         val fourthRow = listOf(
             KeyMetadata.modeSwitch("ABC"),
