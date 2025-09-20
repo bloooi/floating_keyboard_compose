@@ -65,8 +65,6 @@ fun MetadataKeyboardLayout(
     modifier: Modifier = Modifier,
     longPressDelayMs: Long = 300L,
     onKeyPress: (KeyMetadata) -> Unit = {},
-    onKeyTouchDown: (KeyMetadata) -> Unit = {},
-    onKeyTouchUp: (KeyMetadata) -> Unit = {}
 ) {
     var pressedKey by remember { mutableStateOf<KeyMetadata?>(null) }
     var longPressState by remember { mutableStateOf<LongPressState?>(null) }
@@ -136,13 +134,6 @@ fun MetadataKeyboardLayout(
                                     pressedKey = selectedKey // 눌린 키 상태 업데이트
                                 }
                                 longPressState = null
-                            },
-                            onTouchDown = {
-                                onKeyTouchDown(keyMetadata)
-                            },
-                            onTouchUp = {
-                                longPressState = null
-                                onKeyTouchUp(keyMetadata)
                             }
                         )
                     }
@@ -175,8 +166,6 @@ private fun KeyButton(
     onLongPress: (keyPosition: IntOffset, keySize: IntOffset) -> Unit = { _, _ -> },
     onDrag: (dragOffset: Offset) -> Unit = {},
     onRelease: () -> Unit = {},
-    onTouchDown: () -> Unit = {},
-    onTouchUp: () -> Unit = {}
 ) {
     var keyPosition by remember { mutableStateOf(IntOffset.Zero) }
     var keySize by remember { mutableStateOf(IntOffset.Zero) }
@@ -203,9 +192,7 @@ private fun KeyButton(
                     var isDragging = false
                     var longPressTriggered = false
                     val startPosition = down.position
-                    
-                    onTouchDown()
-                    
+
                     // Start long press timer
                     longPressJob = GlobalScope.launch {
                         delay(longPressDelayMs)
@@ -245,7 +232,7 @@ private fun KeyButton(
                     
                     // Handle gesture end
                     longPressJob.cancel()
-                    onTouchUp()
+//                    onTouchUp()
                     
                     // longPressTriggered만 사용
                     if (longPressTriggered) {
