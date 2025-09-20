@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,11 +64,12 @@ private data class LongPressState(
 fun MetadataKeyboardLayout(
     layout: KeyboardLayout,
     modifier: Modifier = Modifier,
-    longPressDelayMs: Long = 300L,
+    longPressDelayMs: Long = 200L,
     onKeyPress: (KeyMetadata) -> Unit = {},
 ) {
     var pressedKey by remember { mutableStateOf<KeyMetadata?>(null) }
     var longPressState by remember { mutableStateOf<LongPressState?>(null) }
+    var layoutCoordinates by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
     val density = LocalDensity.current
 
     LaunchedEffect(pressedKey) {
@@ -77,7 +79,11 @@ fun MetadataKeyboardLayout(
         }
     }
 
-    Box(modifier = modifier) {
+    Box(modifier = modifier
+        .onGloballyPositioned { coordinates ->
+            layoutCoordinates = coordinates
+        }
+    ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -105,12 +111,20 @@ fun MetadataKeyboardLayout(
                                 pressedKey = keyMetadata
                                 onKeyPress(keyMetadata)
                             },
-                            onLongPress = { keyPosition, keySize ->
+                            onLongPress = { keyCoordinates, keySize ->
                                 val variants = keyMetadata.longPressOptions
                                 if (!variants.isNullOrEmpty()) {
+                                    // MetadataKeyboardLayout 기준 상대 위치 계산
+                                    val relativePosition = layoutCoordinates?.let { layoutCoords ->
+                                        layoutCoords.localPositionOf(keyCoordinates, Offset.Zero)
+                                    } ?: Offset.Zero
+
                                     longPressState = LongPressState(
                                         key = keyMetadata,
-                                        keyPosition = keyPosition,
+                                        keyPosition = IntOffset(
+                                            relativePosition.x.toInt(),
+                                            relativePosition.y.toInt()
+                                        ),
                                         keySize = keySize,
                                         variants = listOf(keyMetadata) + variants
                                     )
@@ -141,16 +155,54 @@ fun MetadataKeyboardLayout(
             }
         }
 
-        // Long press popup
+        // Long press popup - Box 내부에서 상대 위치로 렌더링
         longPressState?.let { state ->
-            LongPressPopup(
-                isVisible = true,
-                keyPosition = state.keyPosition,
-                keySize = state.keySize,
-                variants = state.variants,
-                selectedIndex = state.selectedIndex,
-                onDismiss = { longPressState = null }
-            )
+            // 팝업을 키 위쪽에 표시
+            val popupOffsetY = state.keyPosition.y - 110
+            val popupOffsetX = state.keyPosition.x - 8
+
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(popupOffsetX, popupOffsetY) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .shadow(12.dp, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    state.variants.forEachIndexed { index, variant ->
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .background(
+                                    if (index == state.selectedIndex) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    },
+                                    RoundedCornerShape(6.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = variant.label,
+                                color = if (index == state.selectedIndex) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -163,23 +215,17 @@ private fun KeyButton(
     longPressDelayMs: Long,
     modifier: Modifier = Modifier,
     onTap: () -> Unit = {},
-    onLongPress: (keyPosition: IntOffset, keySize: IntOffset) -> Unit = { _, _ -> },
+    onLongPress: (keyCoordinates: androidx.compose.ui.layout.LayoutCoordinates, keySize: IntOffset) -> Unit = { _, _ -> },
     onDrag: (dragOffset: Offset) -> Unit = {},
     onRelease: () -> Unit = {},
 ) {
-    var keyPosition by remember { mutableStateOf(IntOffset.Zero) }
+    var keyCoordinates by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
     var keySize by remember { mutableStateOf(IntOffset.Zero) }
 
     Box(
         modifier = modifier
             .onGloballyPositioned { coordinates ->
-                // 전체 화면 기준 절대 위치 계산
-                val windowPosition = coordinates.localToWindow(Offset.Zero)
-                
-                keyPosition = IntOffset(
-                    windowPosition.x.toInt(),
-                    windowPosition.y.toInt()
-                )
+                keyCoordinates = coordinates
                 keySize = IntOffset(
                     coordinates.size.width,
                     coordinates.size.height
@@ -198,7 +244,9 @@ private fun KeyButton(
                         delay(longPressDelayMs)
                         if (!isDragging) {
                             longPressTriggered = true
-                            onLongPress(keyPosition, keySize)
+                            keyCoordinates?.let { coords ->
+                                onLongPress(coords, keySize)
+                            }
                         }
                     }
                     
