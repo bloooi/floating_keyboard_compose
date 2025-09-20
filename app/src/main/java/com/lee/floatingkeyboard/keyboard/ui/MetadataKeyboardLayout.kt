@@ -1,5 +1,6 @@
 package com.lee.floatingkeyboard.keyboard.ui
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -229,7 +230,7 @@ private fun KeyButton(
                                 isDragging = true
                             }
                             
-                            // 수정된 조건: longPressTriggered만 사용
+                            // longPressTriggered만 사용
                             if (longPressTriggered && isDragging) {
                                 onDrag(Offset(
                                     currentPointer.position.x - startPosition.x,
@@ -246,10 +247,10 @@ private fun KeyButton(
                     longPressJob.cancel()
                     onTouchUp()
                     
-                    // 수정된 조건: longPressTriggered만 사용
+                    // longPressTriggered만 사용
                     if (longPressTriggered) {
                         onRelease()
-                    } else if (!isDragging && !longPressTriggered) {
+                    } else if (!isDragging) {
                         onTap()
                     }
                 }
@@ -317,10 +318,16 @@ private fun calculateSelectedVariantIndex(
 ): Int {
     if (variantCount <= 1) return 0
 
-    // 드래그 위치를 기준으로 인덱스 계산
-    val normalizedOffset = (dragOffset + keyWidth / 2) / keyWidth
-    val index = (normalizedOffset * variantCount).roundToInt()
+    // 한 변형당 필요한 드래그 거리 (키 너비의 30%)
+    val dragDistancePerVariant = keyWidth * 0.3f
+    
+    // 드래그 거리를 기준으로 인덱스 계산 (0부터 시작)
+    val index = when {
+        dragOffset >= 0 -> (dragOffset / dragDistancePerVariant).toInt()
+        else -> -((-dragOffset) / dragDistancePerVariant).toInt()
+    }
 
+    Log.d("LongPress", "dragOffset: $dragOffset, dragDistancePerVariant: $dragDistancePerVariant, calculated index: $index, final index: ${index.coerceIn(0, variantCount - 1)}")
     return index.coerceIn(0, variantCount - 1)
 }
 
