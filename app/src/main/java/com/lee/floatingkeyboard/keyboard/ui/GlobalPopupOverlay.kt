@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,12 +71,38 @@ object GlobalPopupState {
 
 /**
  * 화면 전체를 덮는 글로벌 팝업 오버레이
- * 키보드와 완전히 독립적으로 작동
+ * 키보드와 완전히 독립적으로 작동하며 화면 경계에서 잘리지 않도록 위치 조정
  */
 @Composable
 fun GlobalPopupOverlay() {
     if (GlobalPopupState.isVisible && GlobalPopupState.variants.isNotEmpty()) {
         val density = LocalDensity.current
+        val configuration = LocalConfiguration.current
+        val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
+        val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
+
+        // 팝업 크기 계산
+        val popupWidth = with(density) {
+            val itemWidth = 50.dp.toPx()
+            val spacing = 2.dp.toPx()
+            val padding = 16.dp.toPx()
+            GlobalPopupState.variants.size * itemWidth + (GlobalPopupState.variants.size - 1) * spacing + padding
+        }
+        val popupHeight = with(density) {
+            val itemHeight = 50.dp.toPx()
+            val padding = 16.dp.toPx()
+            itemHeight + padding
+        }
+
+        // 화면 경계 체크 및 위치 조정
+        val adjustedPosition = calculateAdjustedPosition(
+            originalPosition = GlobalPopupState.globalPosition,
+            popupWidth = popupWidth,
+            popupHeight = popupHeight,
+            screenWidth = screenWidth,
+            screenHeight = screenHeight,
+            density = density
+        )
 
         Box(
             modifier = Modifier
@@ -85,8 +112,8 @@ fun GlobalPopupOverlay() {
                 modifier = Modifier
                     .offset {
                         IntOffset(
-                            GlobalPopupState.globalPosition.x.toInt(),
-                            GlobalPopupState.globalPosition.y.toInt()
+                            adjustedPosition.x.toInt(),
+                            adjustedPosition.y.toInt()
                         )
                     }
             ) {
@@ -130,4 +157,56 @@ fun GlobalPopupOverlay() {
             }
         }
     }
+}
+
+/**
+ * 화면 경계를 고려하여 팝업 위치를 조정
+ * 잘리지 않을 경우에는 원래 위치 유지
+ */
+private fun calculateAdjustedPosition(
+    originalPosition: Offset,
+    popupWidth: Float,
+    popupHeight: Float,
+    screenWidth: Float,
+    screenHeight: Float,
+    density: androidx.compose.ui.unit.Density
+): Offset {
+    val margin = with(density) { 8.dp.toPx() }
+
+    var adjustedX = originalPosition.x
+    var adjustedY = originalPosition.y
+
+    // X축 경계 체크
+    when {
+        // 왼쪽 경계를 넘어가는 경우
+        originalPosition.x < margin -> {
+            adjustedX = margin
+        }
+        // 오른쪽 경계를 넘어가는 경우
+        originalPosition.x + popupWidth > screenWidth - margin -> {
+            adjustedX = screenWidth - popupWidth - margin
+        }
+        // 잘리지 않는 경우 원래 위치 유지
+        else -> {
+            adjustedX = originalPosition.x
+        }
+    }
+
+    // Y축 경계 체크
+    when {
+        // 위쪽 경계를 넘어가는 경우
+        originalPosition.y < margin -> {
+            adjustedY = margin
+        }
+        // 아래쪽 경계를 넘어가는 경우
+        originalPosition.y + popupHeight > screenHeight - margin -> {
+            adjustedY = screenHeight - popupHeight - margin
+        }
+        // 잘리지 않는 경우 원래 위치 유지
+        else -> {
+            adjustedY = originalPosition.y
+        }
+    }
+
+    return Offset(adjustedX, adjustedY)
 }
