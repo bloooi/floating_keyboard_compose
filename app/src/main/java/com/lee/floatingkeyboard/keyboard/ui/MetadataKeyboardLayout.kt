@@ -59,6 +59,7 @@ private data class LongPressState(
 
 /**
  * KeyMetadata를 사용하는 키보드 레이아웃 컴포저블
+ * 글로벌 팝업 오버레이를 사용하여 클리핑 문제 해결
  */
 @Composable
 fun MetadataKeyboardLayout(
@@ -68,8 +69,6 @@ fun MetadataKeyboardLayout(
     onKeyPress: (KeyMetadata) -> Unit = {},
 ) {
     var pressedKey by remember { mutableStateOf<KeyMetadata?>(null) }
-    var longPressState by remember { mutableStateOf<LongPressState?>(null) }
-    var layoutCoordinates by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
     val density = LocalDensity.current
 
     LaunchedEffect(pressedKey) {
@@ -79,128 +78,73 @@ fun MetadataKeyboardLayout(
         }
     }
 
-    Box(modifier = modifier
-        .onGloballyPositioned { coordinates ->
-            layoutCoordinates = coordinates
-        }
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            layout.rows.forEach { rowKeys ->
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    rowKeys.forEachIndexed { index, keyMetadata ->
-                        val isLongPressed = longPressState?.key == keyMetadata
-                        KeyButton(
-                            keyMetadata = keyMetadata,
-                            isPressed = pressedKey == keyMetadata,
-                            isLongPressed = isLongPressed,
-                            longPressDelayMs = longPressDelayMs,
-                            modifier = Modifier
-                                .weight(keyMetadata.weight)
-                                .height(50.dp)
-                                .padding(
-                                    start = if (index > 0) 2.dp else 0.dp,
-                                    top = 1.dp,
-                                    end = if (index < rowKeys.size - 1) 2.dp else 0.dp,
-                                    bottom = 1.dp
-                                ),
-                            onTap = {
-                                pressedKey = keyMetadata
-                                onKeyPress(keyMetadata)
-                            },
-                            onLongPress = { keyCoordinates, keySize ->
-                                val variants = keyMetadata.longPressOptions
-                                if (!variants.isNullOrEmpty()) {
-                                    // MetadataKeyboardLayout 기준 상대 위치 계산
-                                    val relativePosition = layoutCoordinates?.let { layoutCoords ->
-                                        layoutCoords.localPositionOf(keyCoordinates, Offset.Zero)
-                                    } ?: Offset.Zero
-
-                                    longPressState = LongPressState(
-                                        key = keyMetadata,
-                                        keyPosition = IntOffset(
-                                            relativePosition.x.toInt(),
-                                            relativePosition.y.toInt()
-                                        ),
-                                        keySize = keySize,
-                                        variants = listOf(keyMetadata) + variants
-                                    )
-                                }
-                            },
-                            onDrag = { dragOffset ->
-                                longPressState?.let { state ->
-                                    val keyWidth = with(density) { state.keySize.x.toDp().toPx() }
-                                    val selectedIndex = calculateSelectedVariantIndex(
-                                        dragOffset = dragOffset.x,
-                                        variantCount = state.variants.size,
-                                        keyWidth = keyWidth
-                                    )
-                                    longPressState = state.copy(selectedIndex = selectedIndex)
-                                }
-                            },
-                            onRelease = {
-                                longPressState?.let { state ->
-                                    val selectedKey = state.variants.getOrNull(state.selectedIndex) ?: keyMetadata
-                                    onKeyPress(selectedKey)
-                                    pressedKey = selectedKey // 눌린 키 상태 업데이트
-                                }
-                                longPressState = null
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Long press popup - Box 내부에서 상대 위치로 렌더링
-        longPressState?.let { state ->
-            // 팝업을 키 위쪽에 표시
-            val popupOffsetY = state.keyPosition.y - 110
-            val popupOffsetX = state.keyPosition.x - 8
-
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(popupOffsetX, popupOffsetY) }
+        layout.rows.forEach { rowKeys ->
+            Row(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .shadow(12.dp, RoundedCornerShape(8.dp))
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    state.variants.forEachIndexed { index, variant ->
-                        Box(
-                            modifier = Modifier
-                                .size(50.dp)
-                                .background(
-                                    if (index == state.selectedIndex) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceVariant
-                                    },
-                                    RoundedCornerShape(6.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = variant.label,
-                                color = if (index == state.selectedIndex) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
+                rowKeys.forEachIndexed { index, keyMetadata ->
+                    // 현재 키가 롱프레스된 키인지 확인
+                    val isCurrentLongPressed = GlobalPopupState.isVisible &&
+                                             GlobalPopupState.currentLongPressedKey == keyMetadata
+
+                    KeyButton(
+                        keyMetadata = keyMetadata,
+                        isPressed = pressedKey == keyMetadata,
+                        isLongPressed = isCurrentLongPressed,
+                        longPressDelayMs = longPressDelayMs,
+                        modifier = Modifier
+                            .weight(keyMetadata.weight)
+                            .height(50.dp)
+                            .padding(
+                                start = if (index > 0) 2.dp else 0.dp,
+                                top = 1.dp,
+                                end = if (index < rowKeys.size - 1) 2.dp else 0.dp,
+                                bottom = 1.dp
+                            ),
+                        onTap = {
+                            pressedKey = keyMetadata
+                            onKeyPress(keyMetadata)
+                        },
+                        onLongPress = { keyCoordinates, keySize ->
+                            val variants = keyMetadata.longPressOptions
+                            if (!variants.isNullOrEmpty()) {
+                                // 글로벌 좌표계에서의 위치 계산
+                                val globalPosition = keyCoordinates.localToWindow(Offset.Zero)
+                                val popupX = globalPosition.x - with(density) { 8.dp.toPx() }
+                                val popupY = globalPosition.y - with(density) { 65.dp.toPx() }
+
+                                // 글로벌 팝업 표시 (키 정보 포함)
+                                GlobalPopupState.show(
+                                    keyMetadata = keyMetadata,
+                                    variantList = listOf(keyMetadata) + variants,
+                                    position = Offset(popupX, popupY)
+                                )
+                            }
+                        },
+                        onDrag = { dragOffset ->
+                            if (GlobalPopupState.isVisible && GlobalPopupState.currentLongPressedKey == keyMetadata) {
+                                val keyWidth = with(density) { 50.dp.toPx() } // 대략적인 키 너비
+                                val selectedIndex = calculateSelectedVariantIndex(
+                                    dragOffset = dragOffset.x,
+                                    variantCount = GlobalPopupState.variants.size,
+                                    keyWidth = keyWidth
+                                )
+                                GlobalPopupState.updateSelection(selectedIndex)
+                            }
+                        },
+                        onRelease = {
+                            if (GlobalPopupState.isVisible && GlobalPopupState.currentLongPressedKey == keyMetadata) {
+                                val selectedKey = GlobalPopupState.variants.getOrNull(GlobalPopupState.selectedIndex) ?: keyMetadata
+                                onKeyPress(selectedKey)
+                                pressedKey = selectedKey
+                                GlobalPopupState.hide()
+                            }
                         }
-                    }
+                    )
                 }
             }
         }

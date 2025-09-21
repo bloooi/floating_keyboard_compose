@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lee.floatingkeyboard.keyboard.ui.FloatingKeyboard
+import com.lee.floatingkeyboard.keyboard.ui.GlobalPopupOverlay
 import com.lee.floatingkeyboard.keyboard.language.LanguageRegistry
 import com.lee.floatingkeyboard.ui.theme.FloatingKeyboardTheme
 
@@ -179,6 +180,9 @@ fun MainScreen() {
                 onClose = { showKeyboard = false }
             )
         }
+
+        // 글로벌 팝업 오버레이 - 항상 최상위에 렌더링
+        GlobalPopupOverlay()
     }
 }
 
