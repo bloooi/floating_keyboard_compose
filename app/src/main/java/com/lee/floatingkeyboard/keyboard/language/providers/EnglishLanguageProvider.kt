@@ -28,14 +28,14 @@ class EnglishLanguageProvider : LanguageProvider {
     private fun createEnglishLayout(isShift: Boolean): KeyboardLayout {
         val firstRow = listOf(
             "q" to emptyList<String>(),
-            "w" to emptyList<String>(),
-            "e" to listOf("è", "é", "ê", "ë", "ē", "ě"),
-            "r" to listOf("ř"),
-            "t" to listOf("ť", "þ"),
-            "y" to listOf("ÿ", "ý"),
-            "u" to listOf("ù", "ú", "û", "ü", "ū", "ů", "ű"),
-            "i" to listOf("ì", "í", "î", "ï", "ī", "ǐ"),
-            "o" to listOf("ò", "ó", "ô", "ö", "õ", "ø", "ō", "ő"),
+            "w" to listOf("ŵ"),
+            "e" to listOf("è", "é", "ê", "ë", "ē", "ě", "ę", "ė"),
+            "r" to listOf("ř", "ŕ"),
+            "t" to listOf("ť", "ţ", "ț", "þ"),
+            "y" to listOf("ÿ", "ý", "ŷ"),
+            "u" to listOf("ù", "ú", "û", "ü", "ū", "ů", "ű", "ų"),
+            "i" to listOf("ì", "í", "î", "ï", "ī", "ǐ", "į", "ĳ", "İ"),
+            "o" to listOf("ò", "ó", "ô", "ö", "õ", "ø", "ō", "ő", "œ"),
             "p" to emptyList<String>()
         ).map { (char, variants) ->
             KeyMetadata.character(
@@ -48,15 +48,15 @@ class EnglishLanguageProvider : LanguageProvider {
         }
 
         val secondRow = listOf(
-            "a" to listOf("à", "á", "â", "ä", "æ", "ã", "å", "ā"),
-            "s" to listOf("ß", "ś", "š"),
-            "d" to listOf("ď", "ð"),
+            "a" to listOf("à", "á", "â", "ä", "æ", "ã", "å", "ā", "ă", "ą", "ǎ"),
+            "s" to listOf("ß", "ś", "š", "ş", "ș", "ŝ"),
+            "d" to listOf("ď", "đ", "ð"),
             "f" to emptyList<String>(),
-            "g" to emptyList<String>(),
-            "h" to emptyList<String>(),
-            "j" to emptyList<String>(),
-            "k" to emptyList<String>(),
-            "l" to listOf("ł")
+            "g" to listOf("ğ", "ġ", "ģ", "ĝ"),
+            "h" to listOf("ĥ"),
+            "j" to listOf("ĵ"),
+            "k" to listOf("ķ"),
+            "l" to listOf("ł", "ľ", "ļ")
         ).map { (char, variants) ->
             KeyMetadata.character(
                 if (isShift) char.uppercase() else char,
@@ -72,10 +72,10 @@ class EnglishLanguageProvider : LanguageProvider {
             *listOf(
                 "z" to listOf("ž", "ź", "ż"),
                 "x" to emptyList<String>(),
-                "c" to listOf("ç", "ć", "č"),
+                "c" to listOf("ç", "ć", "č", "ĉ"),
                 "v" to emptyList<String>(),
                 "b" to emptyList<String>(),
-                "n" to listOf("ñ", "ń"),
+                "n" to listOf("ñ", "ń", "ň", "ņ", "ŋ"),
                 "m" to emptyList<String>()
             ).map { (char, variants) ->
                 KeyMetadata.character(
