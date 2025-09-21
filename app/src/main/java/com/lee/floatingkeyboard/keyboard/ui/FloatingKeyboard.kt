@@ -66,7 +66,6 @@ fun FloatingKeyboard(
     ) {
         KeyboardContent(
             languageProvider = currentLanguageProvider,
-            textComposer = textComposer,
             onKeyPress = { keyAction ->
                 // 모든 언어에 대해 통일된 처리
                 handleTextInput(keyAction, textComposer, onKeyPress)
@@ -83,7 +82,6 @@ fun FloatingKeyboard(
 @Composable
 private fun KeyboardContent(
     languageProvider: LanguageProvider,
-    textComposer: TextComposer,
     onKeyPress: (KeyAction) -> Unit,
     onLanguageSwitch: () -> Unit,
     onClose: () -> Unit,
