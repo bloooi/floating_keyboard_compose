@@ -298,7 +298,7 @@ private fun calculateSelectedVariantIndex(
     if (variantCount <= 1) return 0
 
     // 한 변형당 필요한 드래그 거리 (키 너비의 30%)
-    val dragDistancePerVariant = keyWidth * 0.3f
+    val dragDistancePerVariant = keyWidth * 0.8f
     
     // 드래그 거리를 기준으로 인덱스 계산 (0부터 시작)
     val index = when {
